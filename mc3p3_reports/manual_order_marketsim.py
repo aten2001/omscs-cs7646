@@ -150,8 +150,8 @@ def SMA(df, n):
 
 
 # Exponential Moving Average
-def EMA(df, n):
-    EMA = pd.Series(pd.ewma(df['Adj Close'], span=n, min_periods=n - 1), name='EMA')
+def calc_ema(df,symbol, n):
+    EMA = pd.Series(pd.ewma(df[symbol], span=n, min_periods=n - 1), name='EMA')
     df = df.join(EMA)
     return df
 
@@ -161,10 +161,10 @@ def calc_bb(df, symbol, n):
     MA = pd.Series(pd.rolling_mean(df[symbol], n))
     MSD = pd.Series(pd.rolling_std(df[symbol], n))
     b1 = 4 * MSD / MA
-    B1 = pd.Series(b1, name='Bollinger_Upper')
+    B1 = pd.Series(b1, name='Bollinger_Lower')
     df = df.join(B1)
     b2 = (df[symbol] - MA + 2 * MSD) / (4 * MSD)
-    B2 = pd.Series(b2, name='Bollinger_Lower')
+    B2 = pd.Series(b2, name='Bollinger_Upper')
     df = df.join(B2)
     return df
 
@@ -233,9 +233,14 @@ def compute_normalized(df):
     return normalized
 
 
+def calc_std(df, symbol, n):
+    df = df.join(pd.Series(pd.rolling_std(df[symbol], n), name='STD'))
+    return df
+
+
 # Momentum
-def MOM(df, symbol, n):
-    M = pd.Series(df[symbol].diff(n), name='Momentum_' + str(n))
+def calc_momentum(df, symbol, n):
+    M = pd.Series(df[symbol].diff(n), name='Momentum')
     df = df.join(M)
     return df
 
@@ -273,7 +278,7 @@ def show_rsi(prices_df, symbol):
 
 
 def show_momentum(prices_df, symbol):
-    momentum = MOM(prices_df, symbol, 20)
+    momentum = calc_momentum(prices_df, symbol, 20)
     ema = pd.Series(pd.ewma(prices_df[symbol], span=9, min_periods=8), name='9 day EMA')
     ema_zscored = z_score_df(ema)
     print ema
@@ -499,6 +504,7 @@ def test_code():
     # note that during autograding his function will not be called.
     # Define input parameters
     unique_symbols = ['AAPL']
+    symbol = 'AAPL'
     start_dt = '2008-01-02'
     last_dt = '2009-12-31'
     date_range = pd.date_range(start_dt, last_dt)
@@ -507,15 +513,14 @@ def test_code():
                          addSPY=True,
                          colname='Adj Close')
 
-    df = calc_bb(prices_df, 'AAPL', 20)
+    df = calc_bb(prices_df, symbol, 20)
     df = z_score_df(df)
-
-    # print bb_df
-
-    # Bollinger_Upper  Bollinger_Lower
+    df = calc_momentum(df, symbol, 20)
+    df = calc_std(df, symbol, 20)
+    df = z_score_df(df)
+    df = calc_ema(df, symbol, 9)
 
     columns = ['Date', 'Symbol', 'Order', 'Shares']
-    # order_df = pd.DataFrame(index=date_range, columns=columns)
 
     order_list = []
     holding_period = False
@@ -528,6 +533,9 @@ def test_code():
             bb_up = row['Bollinger_Upper']
             low_indicator = bb_low - price
             up_indicator = price - bb_up
+            momentum = row['Momentum']
+            std = row['STD']
+            ema = row['EMA']
 
             if holding_period:
                 if holding_period_count < 21:
@@ -537,14 +545,15 @@ def test_code():
                     holding_period = False
                     holding_period_count = 0
 
-            if low_indicator > 0 and shares_total <= 0:
+            if low_indicator > 1 and shares_total <= 0:
                 order_list.append([index, 'AAPL', 'BUY', 200])
                 shares_total += 200
                 holding_period = True
-            elif up_indicator > 0 and shares_total >= 0:
-                order_list.append([index, 'AAPL', 'SELL', 200])
-                shares_total -= 200
-                holding_period = True
+            elif up_indicator > 1 and shares_total >= 0:
+                if abs(std) > 0.25 and ema <= price:
+                    order_list.append([index, 'AAPL', 'SELL', 200])
+                    shares_total -= 200
+                    holding_period = True
 
     orders_df = pd.DataFrame(order_list, columns=columns)
     orders_df = orders_df.set_index('Date')
@@ -604,6 +613,18 @@ def test_code():
     plt.ylabel('Portfolio Value')
     ax1.legend(loc='upper left')
     plt.grid(True)
+
+    for index, row in orders_df.iterrows():
+        if row['Order'].lower() == 'buy':
+            plt.axvline(x=index, color='g', linestyle='--')
+        elif row['Order'].lower() == 'sell':
+            plt.axvline(x=index, color='r', linestyle='--')
+
+    prices_normalized = z_score_df(prices_df)
+    ax2 = ax1.twinx()
+    ax2.set_ylabel("Price")
+    prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
+    ax2.legend(loc='upper right')
     plt.show()
 
     # Compare portfolio against $SPX
