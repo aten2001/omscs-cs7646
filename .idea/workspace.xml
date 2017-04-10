@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" line="518" mnemonic="1" />
+    <bookmark url="file://$PROJECT_DIR$/mc3p3_reports/rule_based.py" line="546" mnemonic="2" />
+    <bookmark url="file://$PROJECT_DIR$/mc3p3_reports/rule_based.py" line="519" mnemonic="1" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="65436062-be34-4523-9fd2-45aad6ec432d" name="Default" comment="">
+      <change type="MOVED" beforePath="$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" afterPath="$PROJECT_DIR$/mc3p3_reports/rule_based.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mc3p3_reports/report.docx" afterPath="$PROJECT_DIR$/mc3p3_reports/report.docx" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" afterPath="$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -16,7 +18,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/omscs_cs7646$manual_order_marketsim.coverage" NAME="manual_order_marketsim Coverage Results" MODIFIED="1491837373740" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mc3p3_reports" />
+    <SUITE FILE_PATH="coverage/omscs_cs7646$manual_order_marketsim.coverage" NAME="manual_order_marketsim Coverage Results" MODIFIED="1491837442581" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mc3p3_reports" />
     <SUITE FILE_PATH="coverage/omscs_cs7646$mc3p3.coverage" NAME="mc3p3 Coverage Results" MODIFIED="1491825352642" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mc3p3_reports" />
     <SUITE FILE_PATH="coverage/omscs_cs7646$marketsim.coverage" NAME="marketsim Coverage Results" MODIFIED="1491830380869" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mc3p3_reports" />
   </component>
@@ -47,14 +49,24 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="manual_order_marketsim.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py">
+      <file leaf-file-name="rule_based.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/mc3p3_reports/rule_based.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="509">
-              <caret line="567" column="64" lean-forward="true" selection-start-line="567" selection-start-column="64" selection-end-line="567" selection-end-column="64" />
+            <state relative-caret-position="458">
+              <caret line="531" column="43" lean-forward="true" selection-start-line="531" selection-start-column="43" selection-end-line="531" selection-end-column="43" />
               <folding>
                 <element signature="e#33#52#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="orders_1491837443.csv" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/mc3p3_reports/orders_1491837443.csv">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -149,6 +161,7 @@
         <option value="$PROJECT_DIR$/mc3p3_reports/orders/orders_mc3p3.csv" />
         <option value="$PROJECT_DIR$/mc3p3_reports/marketsim.py" />
         <option value="$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" />
+        <option value="$PROJECT_DIR$/mc3p3_reports/rule_based.py" />
       </list>
     </option>
   </component>
@@ -311,7 +324,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="omscs-cs7646" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py" />
+      <option name="SCRIPT_NAME" value="C:\dev\omscs\omscs-cs7646\mc3p3_reports\rule_based.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -536,7 +549,14 @@
       <option name="project" value="LOCAL" />
       <updated>1491834581660</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="matplotlib practice">
+      <created>1491837408642</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1491837408642</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -545,7 +565,7 @@
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.34086022" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.34086022" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32346722" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -598,13 +618,13 @@
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py</url>
-          <line>618</line>
+          <url>file://$PROJECT_DIR$/mc3p3_reports/rule_based.py</url>
+          <line>617</line>
           <option name="timeStamp" value="19" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py</url>
-          <line>553</line>
+          <url>file://$PROJECT_DIR$/mc3p3_reports/rule_based.py</url>
+          <line>552</line>
           <option name="timeStamp" value="21" />
         </line-breakpoint>
       </breakpoints>
@@ -871,10 +891,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/mc3p3_reports/manual_order_marketsim.py">
+    <entry file="file://$PROJECT_DIR$/mc3p3_reports/orders_1491837443.csv">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="509">
-          <caret line="567" column="64" lean-forward="true" selection-start-line="567" selection-start-column="64" selection-end-line="567" selection-end-column="64" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mc3p3_reports/rule_based.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="458">
+          <caret line="531" column="43" lean-forward="true" selection-start-line="531" selection-start-column="43" selection-end-line="531" selection-end-column="43" />
           <folding>
             <element signature="e#33#52#0" expanded="true" />
           </folding>

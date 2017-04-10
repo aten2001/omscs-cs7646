@@ -531,9 +531,8 @@ def test_code():
             price = row['AAPL']
             bb_low = row['Bollinger_Lower']
             bb_up = row['Bollinger_Upper']
-            low_indicator = bb_low - price
-            up_indicator = price - bb_up
-            momentum = row['Momentum']
+            buy_indicator = bb_low - price
+            lead_sell_indicator = price - bb_up
             std = row['STD']
             ema = row['EMA']
 
@@ -545,11 +544,11 @@ def test_code():
                     holding_period = False
                     holding_period_count = 0
 
-            if low_indicator > 1 and shares_total <= 0:
+            if buy_indicator > 1 and shares_total <= 0:
                 order_list.append([index, 'AAPL', 'BUY', 200])
                 shares_total += 200
                 holding_period = True
-            elif up_indicator > 1 and shares_total >= 0:
+            elif lead_sell_indicator > 1 and shares_total >= 0:
                 if abs(std) > 0.25 and ema <= price:
                     order_list.append([index, 'AAPL', 'SELL', 200])
                     shares_total -= 200
