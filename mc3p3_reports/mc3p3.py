@@ -207,27 +207,173 @@ def get_bollinger_bands(rm, rstd):
     return upper_band, lower_band
 
 
+def z_score_df(df):
+    mean = df.mean()
+    std = df.std()
+    z_scored = (df - mean) / std
+    return z_scored
+
+
+def MACD(df, symbol, n_fast, n_slow):
+    EMAfast = pd.Series(pd.ewma(df[symbol], span=n_fast, min_periods=n_slow - 1))
+    EMAslow = pd.Series(pd.ewma(df[symbol], span=n_slow, min_periods=n_slow - 1))
+    MACD = pd.Series(EMAfast - EMAslow, name='MACD_' + str(n_fast) + '_' + str(n_slow))
+    MACDsign = pd.Series(pd.ewma(MACD, span=9, min_periods=8), name='MACDsign_' + str(n_fast) + '_' + str(n_slow))
+    MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff_' + str(n_fast) + '_' + str(n_slow))
+    df = df.join(MACD)
+    df = df.join(MACDsign)
+    df = df.join(MACDdiff)
+    return df
+
+
+def compute_normalized(df):
+    normalized = df[0:] / df.ix[0]
+    return normalized
+
+
+# Momentum
+def MOM(df, symbol, n):
+    M = pd.Series(df[symbol].diff(n), name='Momentum_' + str(n))
+    df = df.join(M)
+    return df
+
+
+# Relative Strength Index
+def RSI(df, n):
+    i = 0
+    UpI = [0]
+    DoI = [0]
+    while i + 1 <= df.index[-1]:
+        UpMove = df.get_value(i + 1, 'High') - df.get_value(i, 'High')
+        DoMove = df.get_value(i, 'Low') - df.get_value(i + 1, 'Low')
+        if UpMove > DoMove and UpMove > 0:
+            UpD = UpMove
+        else:
+            UpD = 0
+        UpI.append(UpD)
+        if DoMove > UpMove and DoMove > 0:
+            DoD = DoMove
+        else:
+            DoD = 0
+        DoI.append(DoD)
+        i = i + 1
+    UpI = pd.Series(UpI)
+    DoI = pd.Series(DoI)
+    PosDI = pd.Series(pd.ewma(UpI, span=n, min_periods=n - 1))
+    NegDI = pd.Series(pd.ewma(DoI, span=n, min_periods=n - 1))
+    RSI = pd.Series(PosDI / (PosDI + NegDI), name='RSI_' + str(n))
+    df = df.join(RSI)
+    return df
+
+
+def show_rsi(prices_df, symbol):
+    print 'a'
+
+
+def show_momentum(prices_df, symbol):
+    momentum = MOM(prices_df, symbol, 20)
+    ema = pd.Series(pd.ewma(prices_df[symbol], span=9, min_periods=8), name='9 day EMA')
+    ema_zscored = z_score_df(ema)
+    print ema
+
+
+    rstd = get_rolling_std(prices_df[symbol], window=20)
+    plt.subplot(211)
+    prices_normalized = compute_normalized(prices_df[symbol])
+    ax1 = prices_normalized.plot(title="Momentum", color='r', label=symbol)
+
+    plt.xlabel('Date')
+    plt.ylabel('Price')
+    ax1.legend(loc='upper left')
+    plt.grid(True)
+
+    momentum_zscored = z_score_df(momentum)
+    ax2 = ax1.twinx()
+    momentum_zscored['Momentum_20'].plot(label='Momentum', color='b', ax=ax2)
+
+    ax2.set_ylabel("Momentum / Vol")
+    rstd_zscored = z_score_df(rstd)
+    rstd_zscored.plot(color='g', label='Vol', ax=ax2)
+    ax2.legend(loc='upper right')
+
+    # second plot
+    #print momentum_zscored
+    diff = momentum['Momentum_20'] / rstd
+    #print diff
+    diff_zscored = z_score_df(diff)
+    plt.subplot(212)
+    ax3 = diff_zscored.plot(title='Momentum vs Vol and EMA(9)', label='Momentum vs Vol', color='c')
+    ema_zscored.plot(label='9 day EMA', color='y', ax=ax3)
+    plt.grid(True)
+    ax3.set_xlabel("Date")
+    ax3.set_ylabel("Momentum vs Vol")
+    plt.show()
+
+
+def show_macd(prices_df, symbol):
+    macd = MACD(prices_df, symbol, 12, 26)
+    plt.subplot(211)
+    # macd.plot(label='MACD(12,26,9)')
+    prices_normalized = compute_normalized(prices_df[symbol])
+    ax1 = prices_normalized.plot(title="MACD(12,26,9)", color='r', label=symbol)
+    plt.xlabel('Date')
+    plt.ylabel('Price')
+    ax1.legend(loc='upper left')
+    plt.grid(True)
+
+    # second plot
+    macd_zscored = z_score_df(macd['MACD_12_26'])
+    macd_signed = z_score_df(macd['MACDsign_12_26'])
+    macd_diff = z_score_df(macd['MACDdiff_12_26'])
+
+    ax2 = ax1.twinx()
+    macd_zscored.plot(label='MACD_12_26', color='b', ax=ax2)
+    macd_signed.plot(label='9 day EMA', color='g', ax=ax2)
+    ax2.set_ylabel("MACD")
+    ax2.legend(loc='upper right')
+
+    plt.subplot(212)
+    macd_diff.plot(title='MACD vs Signal', label='MACD vs Signal', color='c')
+    plt.grid(True)
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("MACD")
+    plt.show()
+
+
 def show_bollinger_band(prices_df, symbol):
     rm = get_rolling_mean(prices_df[symbol], window=20)
     rstd = get_rolling_std(prices_df[symbol], window=20)
     upper_band, lower_band = get_bollinger_bands(rm, rstd)
 
     # Plt raw values, rolling mean and Bollinger Bands
+    plt.subplot(211)
     ax = prices_df[symbol].plot(title="Bollinger Bands", label=symbol)
     rm.plot(label='Rolling Mean', ax=ax)
     upper_band.plot(label='upper band', ax=ax)
     lower_band.plot(label='lower band', ax=ax)
+    plt.grid(True)
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price")
+    ax.legend(loc='upper left')
 
     lower_indicator = lower_band - prices_df[symbol]
     upper_indicator = prices_df[symbol] - upper_band
 
-    lower_indicator.plot(label='lower bound  - price', ax=ax)
-    upper_indicator.plot(label='price - upper bound', ax=ax)
+    # sell when upper indicator is positive
+    # buy when lower indicator is positive
+    lower_indicator_zscored = z_score_df(lower_indicator)
+    upper_indicator_zscored = z_score_df(upper_indicator)
 
-    # Add axis labels and legend
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Price")
-    ax.legend(loc='upper left')
+    # second plot
+    plt.subplot(212)
+    plt.legend(loc=0)
+
+    ax2 = lower_indicator_zscored.plot(label='lower bound  - price')
+    upper_indicator_zscored.plot(label='price - upper bound', ax=ax2)
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Indicator")
+    ax2.legend(loc='upper left')
+    plt.grid(True)
     plt.show()
 
 
@@ -244,25 +390,14 @@ if __name__ == "__main__":
     # show_histogram()
 
     unique_symbols = ['AAPL']
-    start_dt = '2010-01-04'
-    last_dt = '2011-04-26'
+    start_dt = '2011-09-04'
+    last_dt = '2012-09-01'
     prices_df = get_data(symbols=unique_symbols,
                          dates=pd.date_range(start_dt, last_dt),
                          addSPY=True,
                          colname='Adj Close')
 
-    # prices_df = prices_df.rename(columns={'AAPL': 'Adj Close'})
-    # SMA_AAPL = SMA(prices_df, 20)
-    # SMA_AAPL = SMA_AAPL.dropna()
-    # SMA = SMA_AAPL['SMA']
+    # show_bollinger_band(prices_df, 'AAPL')
 
-    # plt.figure(figsize=(9, 5))
-    # plt.plot(prices_df['Adj Close'], lw=1, label='AAPL Prices')
-    # plt.plot(SMA, 'g', lw=1, label='20 day SMA (green)')
-    # plt.legend(loc=2, prop={'size': 11})
-    # plt.grid(True)
-    # plt.setp(plt.gca().get_xticklabels(), rotation=30)
-    # plt.show()
-
-    show_bollinger_band(prices_df, 'AAPL')
-    plt.show()
+    # show_macd(prices_df, 'AAPL')
+    show_momentum(prices_df, 'AAPL')
