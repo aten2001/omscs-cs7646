@@ -522,16 +522,47 @@ def test_code():
     df = calc_macd(df, symbol, 12, 26)
     df = z_score_df(df)
 
-    plt.scatter(df['MACD'], df['MACDsign'], marker='o')
+    rule_orders_df, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
+
+    ml_orders_df, predict_df, portvals_normalized = ml_based.get_ml_based_orders(displayPlot=False)
+
+    #print rule_orders_df
+    #use_colours = {"1":"green", "-1":"red", "0":"Black"}
+    use_colours = {"B": "green", "S": "red", "H": "Black"}
+    plt.xlim(-1.5, 1.5)
+    plt.ylim(-1.5, 1.5)
+    plt.scatter(df['MACD'], df['MACDsign'], marker='o', c=[use_colours[x[0]] for x in rule_orders_df['Order'].values])
     plt.grid(True)
     plt.xlabel('MACD')
     plt.ylabel('9 Days EMA')
-    plt.title('Scatter Plot')
+    plt.title('Scatter Plot for Rule Based')
     plt.show()
 
-    order_list, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
-    order_df, predict_df, portvals_normalized = ml_based.get_ml_based_orders(displayPlot=False)
-    print order_list
+    plt.cla()
+
+    use_colours = {"1.0": "green", "-1.0": "red", "0.0": "Black"}
+    plt.xlim(-1.5, 1.5)
+    plt.ylim(-1.5, 1.5)
+    plt.scatter(df['MACD'], df['MACDsign'], marker='o', c=[use_colours[str(x)] for x in ml_orders_df['Order'].values])
+    plt.grid(True)
+    plt.xlabel('MACD')
+    plt.ylabel('9 Days EMA')
+    plt.title('Scatter Plot for ML Based - Training Data')
+
+    plt.show()
+
+    plt.cla()
+    use_colours = {"1": "green", "-1": "red", "0": "Black"}
+    plt.xlim(-1.5, 1.5)
+    plt.ylim(-1.5, 1.5)
+    plt.scatter(df['MACD'], df['MACDsign'], marker='o', c=[use_colours[str(x)] for x in predict_df['Predict'].values])
+    plt.grid(True)
+    plt.xlabel('MACD')
+    plt.ylabel('9 Days EMA')
+    plt.title('Scatter Plot for ML Based - Predict Data')
+    plt.show()
+    #print rule_orders_df
+    #print ml_orders_df
 
 if __name__ == "__main__":
     test_code()

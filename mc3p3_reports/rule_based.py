@@ -498,6 +498,7 @@ def order_list_to_df(order_list):
     orders_df = orders_df.set_index('Date')
     return orders_df
 
+
 def get_rule_based(displayPlot=False):
     # this is a helper function you can use to test your code
     # note that during autograding his function will not be called.
@@ -534,7 +535,7 @@ def get_rule_based(displayPlot=False):
         lead_sell_indicator = price - bb_up
         std = row['STD']
         ema = row['EMA']
-        end_of_holding_period =  index + datetime.timedelta(days=21)
+        end_of_holding_period = index + datetime.timedelta(days=21)
         if holding_period and end_of_holding_period <= datetime.datetime(2009, 12, 31):
             if holding_period_count < 21:
                 holding_period_count += 1
@@ -552,6 +553,8 @@ def get_rule_based(displayPlot=False):
                 order_list.append([index, 'AAPL', 'SELL', 200])
                 shares_total -= 200
                 holding_period = True
+            else:
+                order_list.append([index, 'AAPL', 'HOLD', 0])
         else:
             order_list.append([index, 'AAPL', 'HOLD', 0])
 
@@ -646,7 +649,7 @@ def get_rule_based(displayPlot=False):
     print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
     print "Final Portfolio Value: {}".format(portvals[-1])
 
-    return order_list, portvals_normalized
+    return orders_df, portvals_normalized
 
 
 if __name__ == "__main__":
