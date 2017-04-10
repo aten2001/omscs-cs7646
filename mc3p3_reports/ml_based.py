@@ -10,6 +10,8 @@ import datetime
 import math
 import time
 import RTLearner as rtLearner
+import rule_based as rule_based
+
 
 def author():
     return 'jlee3259'  # replace tb34 with your Georgia Tech username.
@@ -150,7 +152,7 @@ def SMA(df, n):
 
 
 # Exponential Moving Average
-def calc_ema(df,symbol, n):
+def calc_ema(df, symbol, n):
     EMA = pd.Series(pd.ewma(df[symbol], span=n, min_periods=n - 1), name='EMA')
     df = df.join(EMA)
     return df
@@ -216,12 +218,12 @@ def z_score_df(df):
     return z_scored
 
 
-def MACD(df, symbol, n_fast, n_slow):
+def calc_macd(df, symbol, n_fast, n_slow):
     EMAfast = pd.Series(pd.ewma(df[symbol], span=n_fast, min_periods=n_slow - 1))
     EMAslow = pd.Series(pd.ewma(df[symbol], span=n_slow, min_periods=n_slow - 1))
-    MACD = pd.Series(EMAfast - EMAslow, name='MACD_' + str(n_fast) + '_' + str(n_slow))
-    MACDsign = pd.Series(pd.ewma(MACD, span=9, min_periods=8), name='MACDsign_' + str(n_fast) + '_' + str(n_slow))
-    MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff_' + str(n_fast) + '_' + str(n_slow))
+    MACD = pd.Series(EMAfast - EMAslow, name='MACD')
+    MACDsign = pd.Series(pd.ewma(MACD, span=9, min_periods=8), name='MACDsign')
+    MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff')
     df = df.join(MACD)
     df = df.join(MACDsign)
     df = df.join(MACDdiff)
@@ -317,7 +319,7 @@ def show_momentum(prices_df, symbol):
 
 
 def show_macd(prices_df, symbol):
-    macd = MACD(prices_df, symbol, 12, 26)
+    macd = calc_macd(prices_df, symbol, 12, 26)
     plt.subplot(211)
     # macd.plot(label='MACD(12,26,9)')
     prices_normalized = compute_normalized(prices_df[symbol])
@@ -514,54 +516,86 @@ def test_code():
                          colname='Adj Close')
 
     df = calc_bb(prices_df, symbol, 20)
-    df = z_score_df(df)
     df = calc_momentum(df, symbol, 20)
     df = calc_std(df, symbol, 20)
-    df = z_score_df(df)
     df = calc_ema(df, symbol, 9)
+    df = calc_macd(df, symbol, 12, 26)
+    df = z_score_df(df)
+
+    prices_df = compute_normalized(prices_df)
+    prices_df['21_days_later'] = prices_df[symbol].shift(-21)
+
+    # print prices_df
+    YBUY = 0.02
+    YSELL = -0.02
+    for index, row in df.iterrows():
+        price_21_days_from_t = prices_df.ix[index, '21_days_later']
+        if not math.isnan(price_21_days_from_t):
+            price_t = prices_df.ix[index, symbol]
+            ret = (price_21_days_from_t / price_t) - 1.0
+            df.ix[index, 'ret'] = ret
+            if ret > YBUY:
+                df.ix[index, 'Order'] = +1
+            elif ret < YSELL:
+                df.ix[index, 'Order'] = -1
+            else:
+                df.ix[index, 'Order'] = 0
+        else:
+            df.ix[index, 'Order'] = 0
+
+            # df.ix[index,'Order'] =
+
+    # compute how much of the data is training and testing
+    # separate out training and testing data
+    trainX = df[['Bollinger_Lower', 'Bollinger_Upper', 'MACDsign', 'MACD', 'EMA']].fillna(0).values
+    trainY = df['Order'].values
+
+    # create a learner and train it
+    learner = rtLearner.RTLearner(leaf_size=10, verbose=False)
+    learner.addEvidence(trainX, trainY)  # train it
+    predY = learner.query(trainX)  # get the predictions
+    rmse = math.sqrt(((trainY - predY) ** 2).sum() / trainY.shape[0])
+    print
+    print "In sample results"
+    print "RMSE: ", rmse
+    c = np.corrcoef(predY, y=trainY)
+    print "corr: ", c[0, 1]
+
+    df = pd.DataFrame(data=predY, index=df.index, columns=['Predict'])
 
     columns = ['Date', 'Symbol', 'Order', 'Shares']
-
     order_list = []
     holding_period = False
     holding_period_count = 0
     shares_total = 0
     for index, row in df.iterrows():
-        if math.isnan(row['Bollinger_Lower']) == False:
-            price = row['AAPL']
-            bb_low = row['Bollinger_Lower']
-            bb_up = row['Bollinger_Upper']
-            buy_indicator = bb_low - price
-            lead_sell_indicator = price - bb_up
-            std = row['STD']
-            ema = row['EMA']
-
-            if holding_period:
-                if holding_period_count < 21:
-                    holding_period_count += 1
-                    continue
-                else:
-                    holding_period = False
-                    holding_period_count = 0
-
-            if buy_indicator > 1 and shares_total <= 0:
-                order_list.append([index, 'AAPL', 'BUY', 200])
-                shares_total += 200
-                holding_period = True
-            elif lead_sell_indicator > 1 and shares_total >= 0:
-                if abs(std) > 0.25 and ema <= price:
-                    order_list.append([index, 'AAPL', 'SELL', 200])
-                    shares_total -= 200
-                    holding_period = True
+        predict = row['Predict']
+        if holding_period:
+            if holding_period_count < 21:
+                holding_period_count += 1
+                continue
+            else:
+                holding_period = False
+                holding_period_count = 0
+        if predict == 1 and shares_total <= 0:
+            order_list.append([index, 'AAPL', 'BUY', 200])
+            shares_total += 200
+            holding_period = True
+        elif predict == -1 and shares_total >=0:
+            order_list.append([index, 'AAPL', 'SELL', 200])
+            shares_total -= 200
+            holding_period = True
+        else:
+            order_list.append([index, 'AAPL', 'HOLD', 0])
 
     orders_df = pd.DataFrame(order_list, columns=columns)
     orders_df = orders_df.set_index('Date')
     ts = int(time.time())
-    order_file_name = 'orders_' + str(ts) + '.csv'
+    order_file_name = 'ml_based_orders_' + str(ts) + '.csv'
     orders_df.to_csv(order_file_name)
 
     unique_symbols = ['AAPL']
-    start_dt = '2008-01-02'
+    start_dt = '2008-01-01'
     last_dt = '2009-12-31'
     prices_df = get_data(symbols=unique_symbols,
                          dates=pd.date_range(start_dt, last_dt),
@@ -575,25 +609,21 @@ def test_code():
     sv = 100000
 
     # Process orders
-    portvals = compute_portvals(orders_file=of, start_val=sv)
-    portvals_benchmark = compute_portvals(orders_file=of_benchmark, start_val=sv)
 
-    if isinstance(portvals, pd.DataFrame):
-        portvals = portvals[portvals.columns[0]]  # just get the first column
-    else:
-        "warning, code did not return a DataFrame"
+    portvals_mlbased = compute_portvals(orders_file=of, start_val=sv)
+    portvals_benchmark = compute_portvals(orders_file=of_benchmark, start_val=sv)
 
     # Get portfolio stats
     # Here we just fake the data. you should use your code from previous assignments.
-    start_date = portvals.index[0]
-    end_date = portvals.index[-1]
+    start_date = portvals_mlbased.index[0]
+    end_date = portvals_mlbased.index[-1]
 
     # return cr, adr, sddr, sr, ev
     daily_rets_benchmark = compute_daily_returns(portvals_benchmark)
-    daily_rets = compute_daily_returns(portvals)
+    daily_rets = compute_daily_returns(portvals_mlbased)
 
     # Get portfolio statistics (note: std_daily_ret = volatility)
-    cum_ret, avg_daily_ret, std_daily_ret, sharpe_ratio = [compute_cr(portvals), compute_avg_daily_return(daily_rets),
+    cum_ret, avg_daily_ret, std_daily_ret, sharpe_ratio = [compute_cr(portvals_mlbased), compute_avg_daily_return(daily_rets),
                                                            compute_sddr(daily_rets),
                                                            compute_sr(daily_rets, 0, 252)]
 
@@ -604,9 +634,11 @@ def test_code():
                                                                                    compute_sr(daily_rets_benchmark, 0,
                                                                                               252)]
 
-    portvals_normalized = compute_normalized(portvals)
+    portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
+    portvals_normalized = compute_normalized(portvals_mlbased)
     portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
-    ax1 = portvals_normalized.plot(title="Best Portfolio", color='b', label='Best')
+    ax1 = portvals_normalized.plot(title="Best Portfolio", color='g', label='ML Based Portfolio')
+    portvals_normalized_rulbased.plot(label='Rule Based Portfolio', color='b')
     portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
     plt.xlabel('Date')
     plt.ylabel('Portfolio Value')
@@ -619,11 +651,11 @@ def test_code():
         elif row['Order'].lower() == 'sell':
             plt.axvline(x=index, color='r', linestyle='--')
 
-    prices_normalized = z_score_df(prices_df)
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("Price")
-    prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
-    ax2.legend(loc='upper right')
+    #prices_normalized = z_score_df(prices_df)
+    #ax2 = ax1.twinx()
+    #ax2.set_ylabel("Price")
+    #prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
+    #ax2.legend(loc='upper right')
     plt.show()
 
     # Compare portfolio against $SPX
@@ -642,7 +674,7 @@ def test_code():
     print "Average Daily Return of Benchmark : {}".format(avg_daily_ret_bench)
     print
     print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
-    print "Final Portfolio Value: {}".format(portvals[-1])
+    print "Final Portfolio Value: {}".format(portvals_mlbased[-1])
 
 
 if __name__ == "__main__":

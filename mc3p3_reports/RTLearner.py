@@ -76,7 +76,7 @@ class RTLearner(object):
         @param points: should be a numpy array with each row corresponding to a specific query.
         @returns the estimated values according to the saved model.
         """
-        result = np.fromiter(self.predict_loop(points), dtype=float)
+        result = np.fromiter(self.predict_loop(points), dtype=int)
         if self.verbose:
             print result
         return result

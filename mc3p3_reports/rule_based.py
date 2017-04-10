@@ -150,7 +150,7 @@ def SMA(df, n):
 
 
 # Exponential Moving Average
-def calc_ema(df,symbol, n):
+def calc_ema(df, symbol, n):
     EMA = pd.Series(pd.ewma(df[symbol], span=n, min_periods=n - 1), name='EMA')
     df = df.join(EMA)
     return df
@@ -498,14 +498,13 @@ def order_list_to_df(order_list):
     orders_df = orders_df.set_index('Date')
     return orders_df
 
-
-def test_code():
+def get_rule_based(displayPlot=False):
     # this is a helper function you can use to test your code
     # note that during autograding his function will not be called.
     # Define input parameters
     unique_symbols = ['AAPL']
     symbol = 'AAPL'
-    start_dt = '2008-01-02'
+    start_dt = '2008-01-01'
     last_dt = '2009-12-31'
     date_range = pd.date_range(start_dt, last_dt)
     prices_df = get_data(symbols=unique_symbols,
@@ -519,6 +518,7 @@ def test_code():
     df = calc_std(df, symbol, 20)
     df = z_score_df(df)
     df = calc_ema(df, symbol, 9)
+    df = df.fillna(0)
 
     columns = ['Date', 'Symbol', 'Order', 'Shares']
 
@@ -527,37 +527,38 @@ def test_code():
     holding_period_count = 0
     shares_total = 0
     for index, row in df.iterrows():
-        if math.isnan(row['Bollinger_Lower']) == False:
-            price = row['AAPL']
-            bb_low = row['Bollinger_Lower']
-            bb_up = row['Bollinger_Upper']
-            buy_indicator = bb_low - price
-            lead_sell_indicator = price - bb_up
-            std = row['STD']
-            ema = row['EMA']
+        price = row['AAPL']
+        bb_low = row['Bollinger_Lower']
+        bb_up = row['Bollinger_Upper']
+        buy_indicator = bb_low - price
+        lead_sell_indicator = price - bb_up
+        std = row['STD']
+        ema = row['EMA']
+        end_of_holding_period =  index + datetime.timedelta(days=21)
+        if holding_period and end_of_holding_period <= datetime.datetime(2009, 12, 31):
+            if holding_period_count < 21:
+                holding_period_count += 1
+                continue
+            else:
+                holding_period = False
+                holding_period_count = 0
 
-            if holding_period:
-                if holding_period_count < 21:
-                    holding_period_count += 1
-                    continue
-                else:
-                    holding_period = False
-                    holding_period_count = 0
-
-            if buy_indicator > 1 and shares_total <= 0:
-                order_list.append([index, 'AAPL', 'BUY', 200])
-                shares_total += 200
+        if buy_indicator > 1 and shares_total <= 0:
+            order_list.append([index, 'AAPL', 'BUY', 200])
+            shares_total += 200
+            holding_period = True
+        elif lead_sell_indicator > 1 and shares_total >= 0:
+            if abs(std) > 0.25 and ema <= price:
+                order_list.append([index, 'AAPL', 'SELL', 200])
+                shares_total -= 200
                 holding_period = True
-            elif lead_sell_indicator > 1 and shares_total >= 0:
-                if abs(std) > 0.25 and ema <= price:
-                    order_list.append([index, 'AAPL', 'SELL', 200])
-                    shares_total -= 200
-                    holding_period = True
+        else:
+            order_list.append([index, 'AAPL', 'HOLD', 0])
 
     orders_df = pd.DataFrame(order_list, columns=columns)
     orders_df = orders_df.set_index('Date')
     ts = int(time.time())
-    order_file_name = 'orders_' + str(ts) + '.csv'
+    order_file_name = 'ruled_based_orders_' + str(ts) + '.csv'
     orders_df.to_csv(order_file_name)
 
     unique_symbols = ['AAPL']
@@ -606,25 +607,26 @@ def test_code():
 
     portvals_normalized = compute_normalized(portvals)
     portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
-    ax1 = portvals_normalized.plot(title="Best Portfolio", color='b', label='Best')
-    portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
-    plt.xlabel('Date')
-    plt.ylabel('Portfolio Value')
-    ax1.legend(loc='upper left')
-    plt.grid(True)
+    if displayPlot:
+        ax1 = portvals_normalized.plot(title="Best Portfolio", color='b', label='Best')
+        portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
+        plt.xlabel('Date')
+        plt.ylabel('Portfolio Value')
+        ax1.legend(loc='upper left')
+        plt.grid(True)
 
-    for index, row in orders_df.iterrows():
-        if row['Order'].lower() == 'buy':
-            plt.axvline(x=index, color='g', linestyle='--')
-        elif row['Order'].lower() == 'sell':
-            plt.axvline(x=index, color='r', linestyle='--')
+        for index, row in orders_df.iterrows():
+            if row['Order'].lower() == 'buy':
+                plt.axvline(x=index, color='g', linestyle='--')
+            elif row['Order'].lower() == 'sell':
+                plt.axvline(x=index, color='r', linestyle='--')
 
-    prices_normalized = z_score_df(prices_df)
-    ax2 = ax1.twinx()
-    ax2.set_ylabel("Price")
-    prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
-    ax2.legend(loc='upper right')
-    plt.show()
+        prices_normalized = z_score_df(prices_df)
+        ax2 = ax1.twinx()
+        ax2.set_ylabel("Price")
+        prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
+        ax2.legend(loc='upper right')
+        plt.show()
 
     # Compare portfolio against $SPX
     print "Date Range: {} to {}".format(start_date, end_date)
@@ -644,6 +646,8 @@ def test_code():
     print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
     print "Final Portfolio Value: {}".format(portvals[-1])
 
+    return portvals_normalized
+
 
 if __name__ == "__main__":
-    test_code()
+    get_rule_based()
