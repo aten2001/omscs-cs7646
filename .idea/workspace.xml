@@ -6,10 +6,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="65436062-be34-4523-9fd2-45aad6ec432d" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mc3p3_reports/report.docx" afterPath="$PROJECT_DIR$/mc3p3_reports/report.docx" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mc3p3_reports/rule_based.py" afterPath="$PROJECT_DIR$/mc3p3_reports/rule_based.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mc3p3_reports/visualization.py" afterPath="$PROJECT_DIR$/mc3p3_reports/visualization.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -46,8 +43,8 @@
       <file leaf-file-name="visualization.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mc3p3_reports/visualization.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="236">
-              <caret line="555" column="23" lean-forward="true" selection-start-line="555" selection-start-column="23" selection-end-line="555" selection-end-column="23" />
+            <state relative-caret-position="406">
+              <caret line="565" column="0" lean-forward="true" selection-start-line="565" selection-start-column="0" selection-end-line="565" selection-end-column="0" />
               <folding>
                 <element signature="e#33#52#0" expanded="true" />
               </folding>
@@ -689,7 +686,14 @@
       <option name="project" value="LOCAL" />
       <updated>1491848912991</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="``">
+      <created>1491850795550</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1491850795550</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -1169,8 +1173,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mc3p3_reports/visualization.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="236">
-          <caret line="555" column="23" lean-forward="true" selection-start-line="555" selection-start-column="23" selection-end-line="555" selection-end-column="23" />
+        <state relative-caret-position="406">
+          <caret line="565" column="0" lean-forward="true" selection-start-line="565" selection-start-column="0" selection-end-line="565" selection-end-column="0" />
           <folding>
             <element signature="e#33#52#0" expanded="true" />
           </folding>
