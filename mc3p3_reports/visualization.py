@@ -11,7 +11,7 @@ import math
 import time
 import RTLearner as rtLearner
 import rule_based as rule_based
-
+import ml_based as ml_based
 
 def author():
     return 'jlee3259'  # replace tb34 with your Georgia Tech username.
@@ -529,158 +529,9 @@ def test_code():
     plt.title('Scatter Plot')
     plt.show()
 
-    # print prices_df
-    YBUY = 0.02
-    YSELL = -0.02
-    for index, row in df.iterrows():
-        price_21_days_from_t = prices_df.ix[index, '21_days_later']
-        if not math.isnan(price_21_days_from_t):
-            price_t = prices_df.ix[index, symbol]
-            ret = (price_21_days_from_t / price_t) - 1.0
-            df.ix[index, 'ret'] = ret
-            if ret > YBUY:
-                df.ix[index, 'Order'] = +1
-            elif ret < YSELL:
-                df.ix[index, 'Order'] = -1
-            else:
-                df.ix[index, 'Order'] = 0
-        else:
-            df.ix[index, 'Order'] = 0
-
-            # df.ix[index,'Order'] =
-
-    # compute how much of the data is training and testing
-    # separate out training and testing data
-    trainX = df[['Bollinger_Lower', 'Bollinger_Upper', 'MACDsign', 'MACD', 'EMA']].fillna(0).values
-    trainY = df['Order'].values
-
-    # create a learner and train it
-    learner = rtLearner.RTLearner(leaf_size=10, verbose=False)
-    learner.addEvidence(trainX, trainY)  # train it
-    predY = learner.query(trainX)  # get the predictions
-    rmse = math.sqrt(((trainY - predY) ** 2).sum() / trainY.shape[0])
-    print
-    print "In sample results"
-    print "RMSE: ", rmse
-    c = np.corrcoef(predY, y=trainY)
-    print "corr: ", c[0, 1]
-
-    df = pd.DataFrame(data=predY, index=df.index, columns=['Predict'])
-
-    columns = ['Date', 'Symbol', 'Order', 'Shares']
-    order_list = []
-    holding_period = False
-    holding_period_count = 0
-    shares_total = 0
-    for index, row in df.iterrows():
-        predict = row['Predict']
-        if holding_period:
-            if holding_period_count < 21:
-                holding_period_count += 1
-                continue
-            else:
-                holding_period = False
-                holding_period_count = 0
-        if predict == 1 and shares_total <= 0:
-            order_list.append([index, 'AAPL', 'BUY', 200])
-            shares_total += 200
-            holding_period = True
-        elif predict == -1 and shares_total >= 0:
-            order_list.append([index, 'AAPL', 'SELL', 200])
-            shares_total -= 200
-            holding_period = True
-        else:
-            order_list.append([index, 'AAPL', 'HOLD', 0])
-
-    orders_df = pd.DataFrame(order_list, columns=columns)
-    orders_df = orders_df.set_index('Date')
-    ts = int(time.time())
-    order_file_name = 'ml_based_orders_' + str(ts) + '.csv'
-    orders_df.to_csv(order_file_name)
-
-    unique_symbols = ['AAPL']
-    start_dt = '2008-01-01'
-    last_dt = '2009-12-31'
-    prices_df = get_data(symbols=unique_symbols,
-                         dates=pd.date_range(start_dt, last_dt),
-                         addSPY=True,
-                         colname='Adj Close')
-
-    # of = "./orders/orders_mc3p3_benchmark.csv"
-    of_benchmark = "./orders/orders_mc3p3_benchmark.csv"
-    of = order_file_name
-
-    sv = 100000
-
-    # Process orders
-
-    portvals_mlbased = compute_portvals(orders_file=of, start_val=sv)
-    portvals_benchmark = compute_portvals(orders_file=of_benchmark, start_val=sv)
-
-    # Get portfolio stats
-    # Here we just fake the data. you should use your code from previous assignments.
-    start_date = portvals_mlbased.index[0]
-    end_date = portvals_mlbased.index[-1]
-
-    # return cr, adr, sddr, sr, ev
-    daily_rets_benchmark = compute_daily_returns(portvals_benchmark)
-    daily_rets = compute_daily_returns(portvals_mlbased)
-
-    # Get portfolio statistics (note: std_daily_ret = volatility)
-    cum_ret, avg_daily_ret, std_daily_ret, sharpe_ratio = [compute_cr(portvals_mlbased),
-                                                           compute_avg_daily_return(daily_rets),
-                                                           compute_sddr(daily_rets),
-                                                           compute_sr(daily_rets, 0, 252)]
-
-    cum_ret_bench, avg_daily_ret_bench, std_daily_ret_bench, sharpe_ratio_bench = [compute_cr(portvals_benchmark),
-                                                                                   compute_avg_daily_return(
-                                                                                       daily_rets_benchmark),
-                                                                                   compute_sddr(daily_rets_benchmark),
-                                                                                   compute_sr(daily_rets_benchmark, 0,
-                                                                                              252)]
-
-    portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
-    portvals_normalized = compute_normalized(portvals_mlbased)
-    portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
-    ax1 = portvals_normalized.plot(title="Best Portfolio", color='g', label='ML Based Portfolio')
-    portvals_normalized_rulbased.plot(label='Rule Based Portfolio', color='b')
-    portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
-    plt.xlabel('Date')
-    plt.ylabel('Portfolio Value')
-    ax1.legend(loc='upper left')
-    plt.grid(True)
-
-    for index, row in orders_df.iterrows():
-        if row['Order'].lower() == 'buy':
-            plt.axvline(x=index, color='g', linestyle='--')
-        elif row['Order'].lower() == 'sell':
-            plt.axvline(x=index, color='r', linestyle='--')
-
-    # prices_normalized = z_score_df(prices_df)
-    # ax2 = ax1.twinx()
-    # ax2.set_ylabel("Price")
-    # prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
-    # ax2.legend(loc='upper right')
-    plt.show()
-
-    # Compare portfolio against $SPX
-    print "Date Range: {} to {}".format(start_date, end_date)
-    print
-    print "Sharpe Ratio of Fund: {}".format(sharpe_ratio)
-    print "Sharpe Ratio of Benchmark : {}".format(sharpe_ratio_bench)
-    print
-    print "Cumulative Return of Fund: {}".format(cum_ret)
-    print "Cumulative Return of Benchmark : {}".format(cum_ret_bench)
-    print
-    print "Standard Deviation of Fund: {}".format(std_daily_ret)
-    print "Standard Deviation of Benchmark : {}".format(std_daily_ret_bench)
-    print
-    print "Average Daily Return of Fund: {}".format(avg_daily_ret)
-    print "Average Daily Return of Benchmark : {}".format(avg_daily_ret_bench)
-    print
-    print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
-    print "Final Portfolio Value: {}".format(portvals_mlbased[-1])
-
+    order_list, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
+    order_df, predict_df, portvals_normalized = ml_based.get_ml_based_orders(displayPlot=False)
+    print order_list
 
 if __name__ == "__main__":
     test_code()

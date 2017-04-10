@@ -634,7 +634,7 @@ def get_ml_based_orders(displayPlot=False):
                                                                                    compute_sddr(daily_rets_benchmark),
                                                                                    compute_sr(daily_rets_benchmark, 0,
                                                                                               252)]
-    portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
+    order_list, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
     portvals_normalized = compute_normalized(portvals_mlbased)
     portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
     if displayPlot:

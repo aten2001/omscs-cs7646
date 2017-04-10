@@ -646,7 +646,7 @@ def get_rule_based(displayPlot=False):
     print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
     print "Final Portfolio Value: {}".format(portvals[-1])
 
-    return portvals_normalized
+    return order_list, portvals_normalized
 
 
 if __name__ == "__main__":
