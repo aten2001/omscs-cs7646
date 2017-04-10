@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import datetime
 import math
 import time
+import RTLearner as rtLearner
+import rule_based as rule_based
+import ml_based as ml_based
 
 
 def author():
@@ -216,12 +219,12 @@ def z_score_df(df):
     return z_scored
 
 
-def MACD(df, symbol, n_fast, n_slow):
+def calc_macd(df, symbol, n_fast, n_slow):
     EMAfast = pd.Series(pd.ewma(df[symbol], span=n_fast, min_periods=n_slow - 1))
     EMAslow = pd.Series(pd.ewma(df[symbol], span=n_slow, min_periods=n_slow - 1))
-    MACD = pd.Series(EMAfast - EMAslow, name='MACD_' + str(n_fast) + '_' + str(n_slow))
-    MACDsign = pd.Series(pd.ewma(MACD, span=9, min_periods=8), name='MACDsign_' + str(n_fast) + '_' + str(n_slow))
-    MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff_' + str(n_fast) + '_' + str(n_slow))
+    MACD = pd.Series(EMAfast - EMAslow, name='MACD')
+    MACDsign = pd.Series(pd.ewma(MACD, span=9, min_periods=8), name='MACDsign')
+    MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff')
     df = df.join(MACD)
     df = df.join(MACDsign)
     df = df.join(MACDdiff)
@@ -317,7 +320,7 @@ def show_momentum(prices_df, symbol):
 
 
 def show_macd(prices_df, symbol):
-    macd = MACD(prices_df, symbol, 12, 26)
+    macd = calc_macd(prices_df, symbol, 12, 26)
     plt.subplot(211)
     # macd.plot(label='MACD(12,26,9)')
     prices_normalized = compute_normalized(prices_df[symbol])
@@ -499,149 +502,59 @@ def order_list_to_df(order_list):
     return orders_df
 
 
-def get_rule_based(displayPlot=False, start_dt='2008-01-01', last_dt='2009-12-31',
-                   of_benchmark="./orders/orders_mc3p3_benchmark.csv"):
+def test_code():
     # this is a helper function you can use to test your code
     # note that during autograding his function will not be called.
     # Define input parameters
     unique_symbols = ['AAPL']
     symbol = 'AAPL'
+    start_dt = '2008-01-02'
+    last_dt = '2009-12-31'
     date_range = pd.date_range(start_dt, last_dt)
     prices_df = get_data(symbols=unique_symbols,
                          dates=date_range,
                          addSPY=True,
                          colname='Adj Close')
-    last_date = prices_df.index[-1]
+
     df = calc_bb(prices_df, symbol, 20)
-    df = z_score_df(df)
     df = calc_momentum(df, symbol, 20)
     df = calc_std(df, symbol, 20)
-    df = z_score_df(df)
     df = calc_ema(df, symbol, 9)
-    df = df.fillna(0)
+    df = calc_macd(df, symbol, 12, 26)
+    df = z_score_df(df)
 
-    columns = ['Date', 'Symbol', 'Order', 'Shares']
+    start_dt = '2008-01-02'
+    end_dt = '2009-12-31'
+    rule_orders_df, portvals_rule_normalized = rule_based.get_rule_based(displayPlot=False,
+                                                                         start_dt=start_dt,
+                                                                         last_dt=end_dt,
+                                                                         of_benchmark='./orders/orders_mc3p3_benchmark.csv')
+    plt.cla()
 
-    order_list = []
-    holding_period = False
-    holding_period_count = 0
-    shares_total = 0
-    for index, row in df.iterrows():
-        price = row['AAPL']
-        bb_low = row['Bollinger_Lower']
-        bb_up = row['Bollinger_Upper']
-        buy_indicator = bb_low - price
-        lead_sell_indicator = price - bb_up
-        std = row['STD']
-        ema = row['EMA']
-        end_of_holding_period = index + datetime.timedelta(days=21)
-        if holding_period and end_of_holding_period <= last_date:
-            if holding_period_count < 21:
-                holding_period_count += 1
-                continue
-            else:
-                holding_period = False
-                holding_period_count = 0
+    ml_orders_df, predict_df, portvals_ml_normalized, portvals_benchmark_normalized = ml_based.get_ml_based_orders(
+        displayPlot=True,
+        start_dt=start_dt,
+        last_dt=end_dt,
+        of_benchmark='./orders/orders_mc3p3_benchmark.csv')
 
-        if buy_indicator > 1 and shares_total <= 0:
-            order_list.append([index, 'AAPL', 'BUY', 200])
-            shares_total += 200
-            holding_period = True
-        elif lead_sell_indicator > 1 and shares_total >= 0:
-            if abs(std) > 0.25 and ema <= price:
-                order_list.append([index, 'AAPL', 'SELL', 200])
-                shares_total -= 200
-                holding_period = True
-            else:
-                order_list.append([index, 'AAPL', 'HOLD', 0])
-        else:
-            order_list.append([index, 'AAPL', 'HOLD', 0])
+    plt.cla()
 
-    orders_df = pd.DataFrame(order_list, columns=columns)
-    orders_df = orders_df.set_index('Date')
-    ts = int(time.time())
-    order_file_name = 'ruled_based_orders_' + str(ts) + '.csv'
-    orders_df.to_csv(order_file_name)
+    ax1 = portvals_ml_normalized.plot(title="ML Based Portfolio", color='g', label='ML Based Portfolio')
+    portvals_rule_normalized.plot(label='Rule Based Portfolio', color='b')
+    portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
+    plt.xlabel('Date')
+    plt.ylabel('Portfolio Value')
+    ax1.legend(loc='upper left')
+    plt.grid(True)
 
-    unique_symbols = ['AAPL']
 
-    # of = "./orders/orders_mc3p3_benchmark.csv"
-    of = order_file_name
-    sv = 100000
-    # Process orders
-    portvals = compute_portvals(orders_file=of, start_val=sv)
-    portvals_benchmark = compute_portvals(orders_file=of_benchmark, start_val=sv)
-
-    # Get portfolio stats
-    # Here we just fake the data. you should use your code from previous assignments.
-    start_date = portvals.index[0]
-    end_date = portvals.index[-1]
-
-    # return cr, adr, sddr, sr, ev
-    daily_rets_benchmark = compute_daily_returns(portvals_benchmark)
-    daily_rets = compute_daily_returns(portvals)
-
-    # Get portfolio statistics (note: std_daily_ret = volatility)
-    cum_ret, avg_daily_ret, std_daily_ret, sharpe_ratio = [compute_cr(portvals),
-                                                           compute_avg_daily_return(daily_rets),
-                                                           compute_sddr(daily_rets),
-                                                           compute_sr(daily_rets, 0, 252)]
-
-    cum_ret_bench, avg_daily_ret_bench, std_daily_ret_bench, sharpe_ratio_bench = [compute_cr(portvals_benchmark),
-                                                                                   compute_avg_daily_return(
-                                                                                       daily_rets_benchmark),
-                                                                                   compute_sddr(daily_rets_benchmark),
-                                                                                   compute_sr(daily_rets_benchmark, 0,
-                                                                                              252)]
-
-    portvals_normalized = compute_normalized(portvals)
-    portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
-    if displayPlot:
-        plt.cla()
-        plt.clf()
-        ax1 = portvals_normalized.plot(title="Rule Based Portfolio", color='b', label='Best', lw=1.5, style='-')
-        portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1, style='--')
-        plt.xlabel('Date')
-        plt.ylabel('Portfolio Value')
-        ax1.legend(loc='upper left')
-        plt.grid(True)
-
-        for index, row in orders_df.iterrows():
-            if row['Order'].lower() == 'buy':
-                plt.axvline(x=index, color='g', linestyle='--')
-            elif row['Order'].lower() == 'sell':
-                plt.axvline(x=index, color='r', linestyle='--')
-
-        # prices_normalized = z_score_df(prices_df)
-        # ax2 = ax1.twinx()
-        # ax2.set_ylabel("Price")
-        # prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
-        # ax2.legend(loc='upper right')
-        plt.show()
-
-    # Compare portfolio against $SPX
-    print "RULE BASED RESULTS"
-    print
-    print "Date Range: {} to {}".format(start_date, end_date)
-    print
-    print "Sharpe Ratio of Fund: {}".format(sharpe_ratio)
-    print "Sharpe Ratio of Benchmark : {}".format(sharpe_ratio_bench)
-    print
-    print "Cumulative Return of Fund: {}".format(cum_ret)
-    print "Cumulative Return of Benchmark : {}".format(cum_ret_bench)
-    print
-    print "Standard Deviation of Fund: {}".format(std_daily_ret)
-    print "Standard Deviation of Benchmark : {}".format(std_daily_ret_bench)
-    print
-    print "Average Daily Return of Fund: {}".format(avg_daily_ret)
-    print "Average Daily Return of Benchmark : {}".format(avg_daily_ret_bench)
-    print
-    print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
-    print "Final Portfolio Value: {}".format(portvals[-1])
-
-    return orders_df, portvals_normalized
+    # prices_normalized = z_score_df(prices_df)
+    # ax2 = ax1.twinx()
+    # ax2.set_ylabel("Price")
+    # prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
+    # ax2.legend(loc='upper right')
+    plt.show()
 
 
 if __name__ == "__main__":
-    get_rule_based(True, start_dt='2010-01-01', last_dt='2011-12-31',
-                   of_benchmark="./orders/orders_mc3p3_benchmark_outsample.csv")
+    test_code()

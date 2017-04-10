@@ -501,20 +501,18 @@ def order_list_to_df(order_list):
     return orders_df
 
 
-def get_ml_based_orders(displayPlot=False):
+def get_ml_based_orders(displayPlot=False, start_dt='2008-01-02', last_dt='2009-12-31', of_benchmark='./orders/orders_mc3p3_benchmark.csv'):
     # this is a helper function you can use to test your code
     # note that during autograding his function will not be called.
     # Define input parameters
     unique_symbols = ['AAPL']
     symbol = 'AAPL'
-    start_dt = '2008-01-02'
-    last_dt = '2009-12-31'
     date_range = pd.date_range(start_dt, last_dt)
     prices_df = get_data(symbols=unique_symbols,
                          dates=date_range,
                          addSPY=True,
                          colname='Adj Close')
-
+    last_date = prices_df.index[-1]
     df = calc_bb(prices_df, symbol, 20)
     df = calc_momentum(df, symbol, 20)
     df = calc_std(df, symbol, 20)
@@ -593,17 +591,6 @@ def get_ml_based_orders(displayPlot=False):
     ts = int(time.time())
     order_file_name = 'ml_based_orders_' + str(ts) + '.csv'
     orders_df.to_csv(order_file_name)
-
-    unique_symbols = ['AAPL']
-    start_dt = '2008-01-01'
-    last_dt = '2009-12-31'
-    prices_df = get_data(symbols=unique_symbols,
-                         dates=pd.date_range(start_dt, last_dt),
-                         addSPY=True,
-                         colname='Adj Close')
-
-    # of = "./orders/orders_mc3p3_benchmark.csv"
-    of_benchmark = "./orders/orders_mc3p3_benchmark.csv"
     of = order_file_name
 
     sv = 100000
@@ -634,12 +621,10 @@ def get_ml_based_orders(displayPlot=False):
                                                                                    compute_sddr(daily_rets_benchmark),
                                                                                    compute_sr(daily_rets_benchmark, 0,
                                                                                               252)]
-    order_list, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
+    order_list, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False, start_dt=start_dt, last_dt=last_dt)
     portvals_normalized = compute_normalized(portvals_mlbased)
     portvals_benchmark_normalized = compute_normalized(portvals_benchmark)
     if displayPlot:
-
-
         ax1 = portvals_normalized.plot(title="Best Portfolio", color='g', label='ML Based Portfolio')
         portvals_normalized_rulbased.plot(label='Rule Based Portfolio', color='b')
         portvals_benchmark_normalized.plot(label='Benchmark', color='k', ax=ax1)
@@ -659,9 +644,10 @@ def get_ml_based_orders(displayPlot=False):
         # ax2.set_ylabel("Price")
         # prices_normalized['AAPL'].plot(color='c', label='Price', ax=ax2)
         # ax2.legend(loc='upper right')
-        plt.show()
 
         # Compare portfolio against $SPX
+        print "ML BASED RESULTS"
+        print
         print "Date Range: {} to {}".format(start_date, end_date)
         print
         print "Sharpe Ratio of Fund: {}".format(sharpe_ratio)
@@ -678,9 +664,10 @@ def get_ml_based_orders(displayPlot=False):
         print
         print "Final Portfolio Value (Benchmark): {}".format(portvals_benchmark[-1])
         print "Final Portfolio Value: {}".format(portvals_mlbased[-1])
+        plt.show()
 
-    return df, predict_df,portvals_normalized
+    return df, predict_df, portvals_normalized, portvals_benchmark_normalized
 
 
 if __name__ == "__main__":
-   get_ml_based_orders(False)
+    get_ml_based_orders(False)

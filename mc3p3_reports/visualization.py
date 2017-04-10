@@ -524,7 +524,7 @@ def test_code():
 
     rule_orders_df, portvals_normalized_rulbased = rule_based.get_rule_based(displayPlot=False)
 
-    ml_orders_df, predict_df, portvals_normalized = ml_based.get_ml_based_orders(displayPlot=False)
+    ml_orders_df, predict_df, portvals_normalized,portvals_benchmark_normalized = ml_based.get_ml_based_orders(displayPlot=False)
 
     #print rule_orders_df
     #use_colours = {"1":"green", "-1":"red", "0":"Black"}
