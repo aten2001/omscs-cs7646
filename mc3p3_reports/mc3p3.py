@@ -390,14 +390,14 @@ if __name__ == "__main__":
     # show_histogram()
 
     unique_symbols = ['AAPL']
-    start_dt = '2011-09-04'
-    last_dt = '2012-09-01'
+    start_dt = '2008-01-01'
+    last_dt = '2008-04-15'
     prices_df = get_data(symbols=unique_symbols,
                          dates=pd.date_range(start_dt, last_dt),
                          addSPY=True,
                          colname='Adj Close')
 
-    # show_bollinger_band(prices_df, 'AAPL')
+    show_bollinger_band(prices_df, 'AAPL')
 
-    # show_macd(prices_df, 'AAPL')
+    show_macd(prices_df, 'AAPL')
     show_momentum(prices_df, 'AAPL')
