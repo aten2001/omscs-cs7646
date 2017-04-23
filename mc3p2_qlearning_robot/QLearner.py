@@ -57,7 +57,10 @@ class QLearner(object):
         @param r: The ne state
         @returns: The selected action
         """
+        #last taken action
         a = self.a
+
+        #current state
         s = self.s
         # (1-alpha)*Q[s,a] + alpha (r + gamma*Q[S',argmax_a'(Q[S',A'])])
         old_val = (1 - self.alpha) * self.table[s, a]
@@ -67,6 +70,7 @@ class QLearner(object):
         # improved estimate
         new_val = self.alpha * (r + (self.gamma * self.table[s_prime, a_prime]))
         result = old_val + new_val
+        # update the Q table
         self.table[s, a] = result
 
         rand_action = rand.randint(0, self.num_actions - 1)
@@ -77,7 +81,11 @@ class QLearner(object):
         self.rar = self.rar * self.radr
 
         if self.verbose: print "s =", s_prime, "a =", action, "r =", r
+
+        #update the state
         self.s = s_prime
+
+        #update the action
         self.a = action
         return action
 
