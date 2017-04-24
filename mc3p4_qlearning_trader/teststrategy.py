@@ -15,7 +15,7 @@ def test_code(verb = True):
     # set parameters for training the learner
     sym = "GOOG"
     stdate =dt.datetime(2008,1,1)
-    enddate =dt.datetime(2008,1,15) # just a few days for "shake out"
+    enddate =dt.datetime(2009,1,15) # just a few days for "shake out"
 
     # train the learner
     learner.addEvidence(symbol = sym, sd = stdate, \
