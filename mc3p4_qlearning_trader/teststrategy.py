@@ -6,8 +6,8 @@ import pandas as pd
 import datetime as dt
 import util as ut
 import StrategyLearner as sl
-
-def test_code(verb = True):
+import time
+def test_code(verb = False):
 
     # instantiate the strategy learner
     learner = sl.StrategyLearner(verbose = verb)
@@ -15,16 +15,16 @@ def test_code(verb = True):
     # set parameters for training the learner
     sym = "GOOG"
     stdate =dt.datetime(2008,1,1)
-    enddate =dt.datetime(2009,1,15) # just a few days for "shake out"
+    enddate =dt.datetime(2008,9,15) # just a few days for "shake out"
 
     # train the learner
     learner.addEvidence(symbol = sym, sd = stdate, \
-        ed = enddate, sv = 10000) 
+        ed = enddate, sv = 10000)
 
     # set parameters for testing
     sym = "IBM"
     stdate =dt.datetime(2009,1,1)
-    enddate =dt.datetime(2009,1,15)
+    enddate =dt.datetime(2009,9,15)
 
     # get some data for reference
     syms=[sym]
@@ -53,4 +53,4 @@ def test_code(verb = True):
     if verb: print df_trades
 
 if __name__=="__main__":
-    test_code(verb = False)
+    test_code(verb = True)
