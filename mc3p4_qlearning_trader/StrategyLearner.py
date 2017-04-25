@@ -175,8 +175,8 @@ class StrategyLearner(object):
         else:
             holding_val = 4
         result = [int(macd_threshold),
-                  int(bb_lower_threshold),
-                  #int(bb_upper_threshold),
+                  #int(bb_lower_threshold),
+                  int(bb_upper_threshold),
                   #int(ema_threshold),
                   int(force_threshold),
                   int(adj_sma_threshold),
@@ -226,7 +226,7 @@ class StrategyLearner(object):
             dyna=0,
             verbose=False
         )
-        iterations = 150
+        iterations = 1500
         scores = np.zeros((iterations, 1))
         first_trading_day = self.df.index[0]
         start = time.time()
@@ -323,7 +323,11 @@ class StrategyLearner(object):
         state = self.discretize(date=first_trading_day, current_holding=0)
         action = self.learner.querysetstate(s=state)
         portfolio_df = pd.DataFrame(index=self.df.index,
-                                    columns=['Adj Close', 'Stock Trade', 'Stock Total', 'Cash Trade', 'Cash Total',
+                                    columns=['Adj Close',
+                                             'Stock Trade',
+                                             'Stock Total',
+                                             'Cash Trade',
+                                             'Cash Total',
                                              'NAV',
                                              'Daily Return']).fillna(value=0)
 
@@ -362,6 +366,8 @@ class StrategyLearner(object):
                 portfolio_df['Cash Total'][td] = current_cash_bal
                 new_nav = portfolio_df['Cash Total'][td] + (portfolio_df['Stock Total'][td] * current_price)
                 portfolio_df['NAV'][td] = new_nav
+            state = self.discretize(date=td, current_holding=portfolio_df['Stock Total'][td])
+            action = self.learner.querysetstate(state)
 
         trades = portfolio_df[['Stock Trade']]
         if self.verbose: print type(trades)  # it better be a DataFrame!
