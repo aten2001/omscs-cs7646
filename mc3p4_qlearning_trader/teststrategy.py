@@ -15,8 +15,8 @@ def test_code(verb=False):
 
     # set parameters for training the learner
     # sym = "GOOG"
-    sym = "IBM"
-    stdate = dt.datetime(2009, 1, 1)
+    sym = "SINE_FAST_NOISE"
+    stdate = dt.datetime(2008, 1, 1)
     enddate = dt.datetime(2009, 12, 31)  # just a few days for "shake out"
 
     # train the learner
@@ -24,7 +24,7 @@ def test_code(verb=False):
                         ed=enddate, sv=10000)
 
     # set parameters for testing
-    sym = "IBM"
+    sym = "SINE_FAST_NOISE"
     stdate = dt.datetime(2010, 1, 1)
     enddate = dt.datetime(2011, 12, 31)
 

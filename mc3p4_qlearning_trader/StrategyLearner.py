@@ -8,11 +8,13 @@ import pandas as pd
 import util as ut
 import time
 
-#Force Index
+
+# Force Index
 def calc_force_index(df, n):
-    F = pd.Series(df['Adj Close'].diff(n) * df['Volume'].diff(n), name = 'Force')
+    F = pd.Series(df['Adj Close'].diff(n) * df['Volume'].diff(n), name='Force')
     df = df.join(F)
     return df
+
 
 # Moving Average
 def calc_sma(df, n):
@@ -146,6 +148,7 @@ class StrategyLearner(object):
         self.verbose = verbose
 
     def discretize(self, date, current_holding):
+
         # self.thresholds[]
         values = self.df.loc[date]
         volume_value = values['Volume']
@@ -158,7 +161,7 @@ class StrategyLearner(object):
         ema_value = values['EMA']
         adj_sma_value = values['Adj Close / SMA']
 
-        force_threshold =  self.thresholds.loc[self.thresholds['Force'] >= force_value].head(1).index[0]
+        force_threshold = self.thresholds.loc[self.thresholds['Force'] >= force_value].head(1).index[0]
         macd_threshold = self.thresholds.loc[self.thresholds['MACD'] >= macd_value].head(1).index[0]
         volume_threshold = self.thresholds.loc[self.thresholds['Volume'] >= volume_value].head(1).index[0]
         # macd_sign_threshold = self.thresholds.loc[self.thresholds['MACDSign'] >= macd_sign_value].head(1).index[0]
@@ -175,13 +178,16 @@ class StrategyLearner(object):
         else:
             holding_val = 4
         result = [int(macd_threshold),
-                  #int(bb_lower_threshold),
+                  int(bb_lower_threshold),
                   int(bb_upper_threshold),
-                  #int(ema_threshold),
-                  int(force_threshold),
+                  # int(ema_threshold),
+                  # int(force_threshold),
                   int(adj_sma_threshold),
                   int(holding_val)]
-        return int(''.join(map(str, result)))
+        discretized = (result[0] * 10000) + (result[1] * 1000) + (result[2] * 100) + (result[3] * 10) + (result[4])
+        # discretized = indicator_1*1000 + indicator_2*100 * indicator_3*10 + indicator_4
+        # return int(''.join(map(str, result)))
+        return discretized
 
     # this method should create a QLearner, and train it for trading
     def addEvidence(self, symbol="IBM", \
@@ -214,24 +220,25 @@ class StrategyLearner(object):
         df_with_force = calc_force_index(df_with_bb_bands, n=9)
         df_with_sma = calc_sma(df_with_force, n=9)
         self.df = df_with_sma.loc[df_with_sma.index >= sd]
-        self.thresholds = generate_discretize_thresholds(self.df, steps=10)
+        self.thresholds = generate_discretize_thresholds(self.df, steps=5)
 
         self.learner = ql.QLearner(
-            num_states=99999,
+            num_states=55555,
             num_actions=3,
             alpha=0.3,
             gamma=0.9,
-            rar=0.98,
+            rar=0.0,
             radr=0.999,
             dyna=0,
             verbose=False
         )
-        iterations = 1500
+        iterations = 100
         scores = np.zeros((iterations, 1))
         first_trading_day = self.df.index[0]
         start = time.time()
         iteration = 1
-        while (time.time() - start < 26):
+        for iteration in range(1, iterations+1):
+        #while (time.time() - start < 26):
             total_reward = 0
             state = self.discretize(date=first_trading_day, current_holding=0)
             action = self.learner.querysetstate(s=state)
@@ -241,6 +248,9 @@ class StrategyLearner(object):
                                                  'Daily Return']).fillna(value=0)
             previous_nav = 0
             new_nav = 0
+
+            cash_total = 0
+            stock_total = 0
             for td in self.df.index:
                 current_price = self.df['Adj Close'][td]
                 portfolio_df['Adj Close'][td] = current_price
@@ -277,7 +287,7 @@ class StrategyLearner(object):
                     new_nav = portfolio_df['Cash Total'][td] + (portfolio_df['Stock Total'][td] * current_price)
                     portfolio_df['NAV'][td] = new_nav
 
-                reward = 0 if previous_nav == 0.0 else (new_nav - previous_nav) / new_nav
+                reward = 0 if previous_nav == 0.0 else (new_nav / previous_nav) - 1.0
                 total_reward += reward
                 discretized_state = self.discretize(td, portfolio_df['Stock Total'][td])
                 action = self.learner.query(discretized_state, reward)
@@ -288,7 +298,7 @@ class StrategyLearner(object):
             iteration += 1
 
         volume_SPY = volume_all['SPY']  # only SPY, for comparison later
-        #if self.verbose: print volume
+        # if self.verbose: print volume
 
     # this method should use the existing policy and test it against new data
     def testPolicy(self, symbol="IBM", \
@@ -318,7 +328,7 @@ class StrategyLearner(object):
         df_with_force = calc_force_index(df_with_bb_bands, n=12)
         df_with_sma = calc_sma(df_with_force, n=9)
         self.df = df_with_sma.loc[df_with_sma.index >= sd]
-        self.thresholds = generate_discretize_thresholds(self.df, steps=10)
+        self.thresholds = generate_discretize_thresholds(self.df, steps=5)
         first_trading_day = self.df.index[0]
         state = self.discretize(date=first_trading_day, current_holding=0)
         action = self.learner.querysetstate(s=state)
@@ -372,7 +382,7 @@ class StrategyLearner(object):
         trades = portfolio_df[['Stock Trade']]
         if self.verbose: print type(trades)  # it better be a DataFrame!
         if self.verbose: print trades
-        #if self.verbose: print prices_all
+        # if self.verbose: print prices_all
         return trades
 
 
