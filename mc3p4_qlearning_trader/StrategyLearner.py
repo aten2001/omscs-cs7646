@@ -198,11 +198,11 @@ class StrategyLearner(object):
 
         holding_val = 0
         if current_holding > 0:
-            holding_val = 9
+            holding_val = 4
         elif current_holding < 0:
             holding_val = 0
         else:
-            holding_val = 4
+            holding_val = 2
         result = [int(macd_threshold),
                   int(bb_lower_threshold),
                   int(bb_upper_threshold),
@@ -231,7 +231,7 @@ class StrategyLearner(object):
         prices_SPY = prices_all['SPY']  # only SPY, for comparison later
         if self.verbose: print prices
 
-        # example use with new colname 
+        # example use with new colname
         volume_all = ut.get_data(syms, dates, colname="Volume")  # automatically adds SPY
         volume = volume_all[syms]  # only portfolio symbols
 
@@ -392,3 +392,4 @@ class StrategyLearner(object):
 
 if __name__ == "__main__":
     print "One does not simply think up a strategy"
+

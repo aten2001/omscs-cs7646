@@ -70,8 +70,13 @@ class QLearner(object):
         # improved estimate
         new_val = self.alpha * (r + (self.gamma * self.table[s_prime, a_prime]))
         result = old_val + new_val
+
         # update the Q table
-        self.table[s, a] = result
+        #print result
+        x = type(result)
+        if result.shape[0] != 1:
+            print result
+        self.table[s, a] = result[0]
 
         rand_action = rand.randint(0, self.num_actions - 1)
         rand_prob = np.random.uniform(0.0, 1.0, 1)
