@@ -7,6 +7,7 @@ import QLearner as ql
 import pandas as pd
 import util as ut
 import time
+import timeit
 
 
 # Force Index
@@ -65,7 +66,7 @@ def generate_discretize_thresholds(df, steps):
     total_count = df.shape[0]
     step_size = total_count / steps
     columns = ['MACD', 'MACDSign', 'Force', 'Volume', 'Bollinger_Lower', 'Bollinger_Upper', 'EMA', 'Adj Close / SMA']
-    threshold_df = pd.DataFrame(index=range(0, 9), columns=columns)
+    threshold_df = pd.DataFrame(index=range(0, steps), columns=columns)
 
     sorted_by_force = df.sort_values(by='Force', axis=0, ascending=True)
     for i in range(0, steps):
@@ -138,8 +139,18 @@ def generate_discretize_thresholds(df, steps):
             threshold_df.ix[i, 'Adj Close / SMA'] = sorted_by_sma['Adj Close / SMA'].iloc[-1]
         else:
             threshold_df.ix[i, 'Adj Close / SMA'] = sorted_by_sma['Adj Close / SMA'].iloc[pointer]
-
-    return threshold_df
+    columns = ['MACD', 'MACDSign', 'Force', 'Volume', 'Bollinger_Lower', 'Bollinger_Upper', 'EMA', 'Adj Close / SMA']
+    x = {
+        'MACD': threshold_df['MACD'].values,
+        'MACDSign': threshold_df['MACDSign'].values,
+        'Force': threshold_df['Force'].values,
+        'Volume': threshold_df['Volume'].values,
+        'Bollinger_Lower': threshold_df['Bollinger_Lower'].values,
+        'Bollinger_Upper': threshold_df['Bollinger_Upper'].values,
+        'EMA': threshold_df['EMA'].values,
+        'Adj Close / SMA': threshold_df['Adj Close / SMA'].values,
+    }
+    return x
 
 
 class StrategyLearner(object):
@@ -148,7 +159,6 @@ class StrategyLearner(object):
         self.verbose = verbose
 
     def discretize(self, date, current_holding):
-
         # self.thresholds[]
         values = self.df.loc[date]
         volume_value = values['Volume']
@@ -161,15 +171,31 @@ class StrategyLearner(object):
         ema_value = values['EMA']
         adj_sma_value = values['Adj Close / SMA']
 
-        force_threshold = self.thresholds.loc[self.thresholds['Force'] >= force_value].head(1).index[0]
-        macd_threshold = self.thresholds.loc[self.thresholds['MACD'] >= macd_value].head(1).index[0]
-        volume_threshold = self.thresholds.loc[self.thresholds['Volume'] >= volume_value].head(1).index[0]
-        # macd_sign_threshold = self.thresholds.loc[self.thresholds['MACDSign'] >= macd_sign_value].head(1).index[0]
-        #        macd_diff_threshold = self.thresholds.loc[self.thresholds['MACDDiff'] >= macd_diff_value].head(1).index[0]
-        bb_lower_threshold = self.thresholds.loc[self.thresholds['Bollinger_Lower'] >= bb_lower_value].head(1).index[0]
-        bb_upper_threshold = self.thresholds.loc[self.thresholds['Bollinger_Upper'] >= bb_upper_value].head(1).index[0]
-        ema_threshold = self.thresholds.loc[self.thresholds['EMA'] >= ema_value].head(1).index[0]
-        adj_sma_threshold = self.thresholds.loc[self.thresholds['Adj Close / SMA'] >= adj_sma_value].head(1).index[0]
+        for index, elem in enumerate(self.thresholds['Force']):
+            if elem >= force_value:
+                force_threshold = index
+                break
+
+        for index, elem in enumerate(self.thresholds['MACD']):
+            if elem >= macd_value:
+                macd_threshold = index
+                break
+
+        for index, elem in enumerate(self.thresholds['Bollinger_Lower']):
+            if elem >= bb_lower_value:
+                bb_lower_threshold = index
+                break
+
+        for index, elem in enumerate(self.thresholds['Bollinger_Upper']):
+            if elem >= bb_upper_value:
+                bb_upper_threshold = index
+                break
+
+        for index, elem in enumerate(self.thresholds['Adj Close / SMA']):
+            if elem >= adj_sma_value:
+                adj_sma_threshold = index
+                break
+
         holding_val = 0
         if current_holding > 0:
             holding_val = 9
@@ -185,8 +211,6 @@ class StrategyLearner(object):
                   int(adj_sma_threshold),
                   int(holding_val)]
         discretized = (result[0] * 10000) + (result[1] * 1000) + (result[2] * 100) + (result[3] * 10) + (result[4])
-        # discretized = indicator_1*1000 + indicator_2*100 * indicator_3*10 + indicator_4
-        # return int(''.join(map(str, result)))
         return discretized
 
     # this method should create a QLearner, and train it for trading
@@ -227,69 +251,51 @@ class StrategyLearner(object):
             num_actions=3,
             alpha=0.3,
             gamma=0.9,
-            rar=0.0,
+            rar=0.2,
             radr=0.999,
             dyna=0,
             verbose=False
         )
-        iterations = 100
+        iterations = 20000
         scores = np.zeros((iterations, 1))
         first_trading_day = self.df.index[0]
         start = time.time()
         iteration = 1
-        for iteration in range(1, iterations+1):
-        #while (time.time() - start < 26):
+        while (time.time() - start < 28):
             total_reward = 0
             state = self.discretize(date=first_trading_day, current_holding=0)
             action = self.learner.querysetstate(s=state)
-            portfolio_df = pd.DataFrame(index=self.df.index,
-                                        columns=['Adj Close', 'Stock Trade', 'Stock Total', 'Cash Trade', 'Cash Total',
-                                                 'NAV',
-                                                 'Daily Return']).fillna(value=0)
-            previous_nav = 0
+            cash_total = sv
+            stock_qty = 0
+            previous_nav = sv
             new_nav = 0
-
-            cash_total = 0
-            stock_total = 0
             for td in self.df.index:
                 current_price = self.df['Adj Close'][td]
-                portfolio_df['Adj Close'][td] = current_price
                 if td == first_trading_day:
-                    portfolio_df['Cash Trade'][td] = sv
-                    portfolio_df['Cash Total'][td] = sv
-                    portfolio_df['NAV'][td] = sv
+                    cash_total = sv
                     continue
-
-                current_units = portfolio_df['Stock Trade'].sum(axis=0)
-                current_cash_bal = portfolio_df['Cash Trade'].sum(axis=0)
-
-                if action == 0 and current_units >= 0:
-                    incoming_cash = (200 * current_price)
-                    portfolio_df['Stock Trade'][td] = -200
-                    portfolio_df['Stock Total'][td] = current_units - 200
-                    portfolio_df['Cash Trade'][td] = incoming_cash
-                    portfolio_df['Cash Total'][td] = current_cash_bal + incoming_cash
-                    new_nav = portfolio_df['Cash Total'][td] + (portfolio_df['Stock Total'][td] * current_price)
-                    portfolio_df['NAV'][td] = new_nav
-                elif action == 2 and current_units <= 0:
-                    outgoing_cash = (200 * current_price)
-                    portfolio_df['Stock Trade'][td] = (+200)
-                    portfolio_df['Stock Total'][td] = current_units + 200
-                    portfolio_df['Cash Trade'][td] = - outgoing_cash
-                    portfolio_df['Cash Total'][td] = current_cash_bal - outgoing_cash
-                    new_nav = portfolio_df['Cash Total'][td] + (portfolio_df['Stock Total'][td] * current_price)
-                    portfolio_df['NAV'][td] = new_nav
+                # Sell
+                if action == 0 and stock_qty >= 0:
+                    stock_current_value = (200 * current_price)
+                    cash_total += stock_current_value
+                    stock_qty = stock_qty - 200
+                    stock_holdings_total = stock_qty * current_price
+                    new_nav = cash_total + stock_holdings_total
+                # Buy
+                elif action == 2 and stock_qty <= 0:
+                    stock_current_value = (200 * current_price)
+                    cash_total -= stock_current_value
+                    stock_qty = stock_qty + 200
+                    stock_holdings_total = stock_qty * current_price
+                    new_nav = cash_total + stock_holdings_total
+                # Hold
                 else:
-                    portfolio_df['Stock Trade'][td] = 0
-                    portfolio_df['Stock Total'][td] = current_units
-                    portfolio_df['Cash Trade'][td] = 0
-                    portfolio_df['Cash Total'][td] = current_cash_bal
-                    new_nav = portfolio_df['Cash Total'][td] + (portfolio_df['Stock Total'][td] * current_price)
-                    portfolio_df['NAV'][td] = new_nav
+                    stock_holdings_total = current_price * stock_qty
+                    new_nav = cash_total + stock_holdings_total
 
                 reward = 0 if previous_nav == 0.0 else (new_nav / previous_nav) - 1.0
                 total_reward += reward
-                discretized_state = self.discretize(td, portfolio_df['Stock Total'][td])
+                discretized_state = self.discretize(td, stock_qty)
                 action = self.learner.query(discretized_state, reward)
                 previous_nav = new_nav
 
@@ -297,15 +303,13 @@ class StrategyLearner(object):
             scores[iteration - 1, 0] = total_reward
             iteration += 1
 
-        volume_SPY = volume_all['SPY']  # only SPY, for comparison later
-        # if self.verbose: print volume
+            # if self.verbose: print volume
 
     # this method should use the existing policy and test it against new data
     def testPolicy(self, symbol="IBM", \
                    sd=dt.datetime(2009, 1, 1), \
                    ed=dt.datetime(2010, 1, 1), \
                    sv=10000):
-
         # here we build a fake set of trades
         # your code should return the same sort of data
         sd_earlier = sd - dt.timedelta(days=50)
